@@ -1,4 +1,5 @@
 base-devel
+git
 glu
 libgl
 libiconv
@@ -10,7 +11,9 @@ libxml2
 mesa
 nss
 openal
+procps-ng
 python-virtualenv
 sdl2
 vlc
+xz
 zlib

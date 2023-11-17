@@ -58,7 +58,7 @@ fi
 # Set up the build environment
 virtualenv3 ".venv"
 source .venv/bin/activate
-pip install --upgrade cmake llbase llsd certifi autobuild
+pip install --upgrade cmake llbase llsd certifi autobuild ninja
 source .venv/bin/activate
 
 # left here for future cross-compiling need
