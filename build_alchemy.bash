@@ -62,6 +62,8 @@ source .venv/bin/activate
 pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
 source .venv/bin/activate
 
+echo ""
+echo "Configuring the build"
 # left here for future cross-compiling need
 if [[ -z "$CARCH" ]]; then
   CARCH=$(uname -m)
