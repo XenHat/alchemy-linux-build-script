@@ -128,6 +128,6 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     fi
 
 # And now we configure and build the viewer with our adjusted configuration
-$prefix_cmd autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
-$prefix_cmd autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
