@@ -55,13 +55,10 @@ if [[ -n "$packages_file" ]]; then
   fi
 fi
 
-
 # Set up the build environment
 virtualenv3 ".venv"
 source .venv/bin/activate
 pip install --upgrade certifi llbase autobuild cmake ninja
-
-
 source .venv/bin/activate
 
 # left here for future cross-compiling need
