@@ -10,6 +10,7 @@ libxml2
 mesa
 nss
 openal
+python-virtualenv
 sdl2
 vlc
 xdg-desktop-portal
