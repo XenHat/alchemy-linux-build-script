@@ -13,5 +13,4 @@ openal
 python-virtualenv
 sdl2
 vlc
-xdg-desktop-portal
 zlib
