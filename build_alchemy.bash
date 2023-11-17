@@ -50,7 +50,8 @@ if [[ -n "$packages_file" ]]; then
 
   # update system and Install missing packages
   if [[ $is_archlinux ]]; then
-    # shellcheck disable=SC2068 
+    # shellcheck disable=SC2068
+    # TODO: Avoid calling sudo if there's nothing to install
     sudo pacman -Syu --needed ${packages_to_install[@]}
   fi
 fi
@@ -58,7 +59,7 @@ fi
 # Set up the build environment
 virtualenv3 ".venv"
 source .venv/bin/activate
-pip install --upgrade cmake llbase llsd certifi autobuild ninja
+pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
 source .venv/bin/activate
 
 # left here for future cross-compiling need
