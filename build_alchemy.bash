@@ -84,7 +84,6 @@ fi
 
 if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
   if [[ ${build_jobs} -gt 1 ]]; then
-    jobs=1
     # The viewer requires an average of 2GB of memory per core to link
     # Note: Behaviour change compared to the previous versions:
     # This script will no longer try to allocate build memory into swap
@@ -93,30 +92,41 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     # This script will now try to check if swap is present and sufficent
     # for the current used memory to be stored in swap before allocating,
     # and will fallback to conservative allocation if swap is not available
-    gigperlinkprocess=2
-    mempercorekb=$((gigperlinkprocess * 1048576))
+    mempercorekb=$((1048576))
     requiredmemorykb=$(($(nproc) * mempercorekb))
     free_output="$(free --kilo --total | tail -n+2 | tr -s ' ')"
     physical_output=$(grep "Mem:" <<<"$free_output")
-    usedmemorykbphysical=$(cut -d ' ' -f 3 <<<"$physical_output")
     totalmemorykbphysical=$(cut -d ' ' -f 2 <<<"$physical_output")
+    usedmemorykbphysical=$(cut -d ' ' -f 3 <<<"$physical_output")
+    # Don't factor in the caches, these will be flushed as needed
+    #freememorykbphysical=$(cut -d ' ' -f 4 <<<"$physical_output")
+    availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
+    total_output=$(grep "Total:" <<<"$free_output")
+    totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
+    usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
+    freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
     swap_output=$(grep Swap: <<<"$free_output")
     # Determine available swap space
     availableswapkb=0
     if [[ -n "$swap_output" ]]; then
       availableswapkb=$(cut -d ' ' -f 4 <<<"$swap_output")
     fi
-    availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
-    if [[ ${requiredmemorykb} -gt ${availablememorykbphysical} ]]; then
-      echo "Not enough physical memory to build with all cores"
+    echo "Required memory at $(nproc) jobs:         $((requiredmemorykb/1024/1024))GB"
+    echo "Available memory (counting swap):   $((totalmemorykbcombined/1024/1024))GB"
+    echo "Total RAM:                          $((totalmemorykbphysical/1024/1024))GB"
+    if [[ ${requiredmemorykb} -gt ${totalmemorykbphysical} ]]; then
+      echo "Not enough physical memory to use all cores"
       if [[ ${usedmemorykbphysical} -lt ${availableswapkb} ]]; then
-        # There is enough swap to fit all the used memory
-        # use all physical ram as swap will do its job
+        # There is enough swap to fit all the used memory. Use all physical ram as swap will do its job
         echo "Using swap memory to store current processes memory"
-        jobs=$(((totalmemorykbphysical / 1024 / 1024) / gigperlinkprocess))
+        # We do not want to compile in swap, so adjust accordingly
+        jobs=$(((totalmemorykbphysical) / mempercorekb))
       else
+        # TODO: Verify this logic on low-ram systems
         # Not enough swap to hold ram contents, calculate manually
-        while [[ $((jobs * mempercorekb)) -lt ${availablememorykbphysical} ]]; do
+        jobs=1
+        echo "${jobs} job  would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
+        while [[ $((jobs * mempercorekb)) -le ${availablememorykbphysical} ]]; do
           ((jobs++))
           echo "${jobs} jobs would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
         done
