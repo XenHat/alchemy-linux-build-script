@@ -67,6 +67,18 @@ if [[ -z "$CARCH" ]]; then
 fi
 _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
+
+if [[ " ${BUILDENV[*]} " =~ ' ccache ' ]] && command -v ccache >/dev/null 2>&1; then
+  AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
+  echo "ccache was found and will be used"
+fi
+if command -v clang++ >/dev/null 2>&1; then
+  AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
+  AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
+  echo "clang was found and will be used instead of gcc"
+  NO_SMART_JOB_COUNT=1
+fi
+
 if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
   if [[ ${build_jobs} -gt 1 ]]; then
     jobs=1
@@ -93,9 +105,11 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     fi
     availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
     if [[ ${requiredmemorykb} -gt ${availablememorykbphysical} ]]; then
+      echo "Not enough physical memory to build with all cores"
       if [[ ${usedmemorykbphysical} -lt ${availableswapkb} ]]; then
         # There is enough swap to fit all the used memory
         # use all physical ram as swap will do its job
+        echo "Using swap memory to store current processes memory"
         jobs=$(((totalmemorykbphysical / 1024 / 1024) / gigperlinkprocess))
       else
         # Not enough swap to hold ram contents, calculate manually
@@ -117,15 +131,6 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
       -DUSE_LTO:BOOL=OFF
       -DVIEWER_CHANNEL="Alchemy Test"
     )
-    if [[ " ${BUILDENV[*]} " =~ ' ccache ' ]] && command -v ccache >/dev/null 2>&1; then
-      AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
-      echo "ccache was found and will be used"
-    fi
-    if command -v clang++ >/dev/null 2>&1; then
-      AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
-      AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
-      echo "clang was found and will be used instead of gcc"
-    fi
 
 # And now we configure and build the viewer with our adjusted configuration
 autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
