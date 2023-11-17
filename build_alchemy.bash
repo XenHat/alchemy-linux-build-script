@@ -99,14 +99,11 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
         jobs=$(((totalmemorykbphysical / 1024 / 1024) / gigperlinkprocess))
       else
         # Not enough swap to hold ram contents, calculate manually
-        # FIXME: Goes one iteration beyond what it should
         while [[ $((jobs * mempercorekb)) -lt ${availablememorykbphysical} ]]; do
           ((jobs++))
           echo "${jobs} jobs would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
         done
         # Back off one job count. Not sure why I have to do this but
-        # the loop is doing one extra iteration.
-        ((jobs++))
       fi
       build_jobs=${jobs}
     fi
