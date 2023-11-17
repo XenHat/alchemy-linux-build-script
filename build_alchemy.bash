@@ -75,7 +75,7 @@ if [[ " ${BUILDENV[*]} " =~ ' ccache ' ]] && command -v ccache >/dev/null 2>&1; 
   AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
   echo "ccache was found and will be used"
 fi
-if command -v clang++ >/dev/null 2>&1; then
+if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
   AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
   AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
   echo "clang was found and will be used instead of gcc"
