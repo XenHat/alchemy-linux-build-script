@@ -121,17 +121,16 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
       fi
       build_jobs=${jobs}
     fi
-    fi
-    echo "Adjusted job count: ${build_jobs}"
-    fi
-    export AUTOBUILD_CPU_COUNT=$build_jobs
-    AL_CMAKE_CONFIG=(
-      -DLL_TESTS:BOOL=ON
-      -DDISABLE_FATAL_WARNINGS=ON
-      -DUSE_LTO:BOOL=OFF
-      -DVIEWER_CHANNEL="Alchemy Test"
-    )
-
+  fi
+  echo "Adjusted job count: ${build_jobs}"
+fi
+export AUTOBUILD_CPU_COUNT=$build_jobs
+AL_CMAKE_CONFIG=(
+  -DLL_TESTS:BOOL=ON
+  -DDISABLE_FATAL_WARNINGS=ON
+  -DUSE_LTO:BOOL=OFF
+  -DVIEWER_CHANNEL="Alchemy Test"
+)
 # And now we configure and build the viewer with our adjusted configuration
 autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
