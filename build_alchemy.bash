@@ -72,6 +72,13 @@ echo "Configuring the build"
 _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
+AL_CMAKE_CONFIG=(
+  -DLL_TESTS:BOOL=ON
+  -DDISABLE_FATAL_WARNINGS=ON
+  -DUSE_LTO:BOOL=OFF
+  -DVIEWER_CHANNEL="Alchemy Test"
+)
+
 if [[ -z "$NO_CCACHE" ]] && command -v ccache >/dev/null 2>&1; then
   AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
   echo "ccache was found and will be used"
@@ -139,12 +146,7 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
   echo "Adjusted job count: ${build_jobs}"
 fi
 export AUTOBUILD_CPU_COUNT=$build_jobs
-AL_CMAKE_CONFIG=(
-  -DLL_TESTS:BOOL=ON
-  -DDISABLE_FATAL_WARNINGS=ON
-  -DUSE_LTO:BOOL=OFF
-  -DVIEWER_CHANNEL="Alchemy Test"
-)
+
 # And now we configure and build the viewer with our adjusted configuration
 autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
