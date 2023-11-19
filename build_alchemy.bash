@@ -62,16 +62,17 @@ source .venv/bin/activate
 pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
 source .venv/bin/activate
 
-echo ""
-echo "Configuring the build"
 # left here for future cross-compiling need
 if [[ -z "$CARCH" ]]; then
   CARCH=$(uname -m)
 fi
+
+echo ""
+echo "Configuring the build"
 _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
-if [[ " ${BUILDENV[*]} " =~ ' ccache ' ]] && command -v ccache >/dev/null 2>&1; then
+if [[ -z "$NO_CCACHE" ]] && command -v ccache >/dev/null 2>&1; then
   AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
   echo "ccache was found and will be used"
 fi
