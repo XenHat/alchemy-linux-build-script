@@ -25,7 +25,7 @@ set -e
 
 FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
 SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
-SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
+# SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
 
 distribution=$(awk -F'=' '/^ID=/ {print tolower($2)}' /etc/*-release 2> /dev/null)
 packages_file=''
@@ -111,8 +111,8 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
     total_output=$(grep "Total:" <<<"$free_output")
     totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
-    usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
-    freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
+#     usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
+#     freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
     swap_output=$(grep Swap: <<<"$free_output")
     # Determine available swap space
     availableswapkb=0
