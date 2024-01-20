@@ -73,7 +73,7 @@ _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
 AL_CMAKE_CONFIG=(
-  -DLL_TESTS:BOOL=ON
+  -DLL_TESTS:BOOL=${ENABLE_TESTS:-ON}
   -DDISABLE_FATAL_WARNINGS=ON
   -DUSE_LTO:BOOL=OFF
   -DVIEWER_CHANNEL="Alchemy Test"
@@ -87,7 +87,6 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
   AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
   AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
   echo "clang was found and will be used instead of gcc"
-  NO_SMART_JOB_COUNT=1
 fi
 
 if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
@@ -111,8 +110,8 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
     total_output=$(grep "Total:" <<<"$free_output")
     totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
-#     usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
-#     freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
+    usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
+    freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
     swap_output=$(grep Swap: <<<"$free_output")
     # Determine available swap space
     availableswapkb=0
