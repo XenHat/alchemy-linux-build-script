@@ -1,0 +1,15 @@
+mesa-libGLU-devel
+libglvnd-devel
+libidn-devel
+libjpeg-turbo-devel
+libpng-devel
+libxml2-devel
+mesa-libGL-devel
+nss-devel
+openal-soft-devel
+procps-ng
+python3-virtualenv
+SDL2-devel
+vlc-devel
+xz
+zlib
