@@ -31,36 +31,38 @@ distribution=$(awk -F'=' '/^ID=/ {print tolower($2)}' /etc/*-release 2> /dev/nul
 packages_file=''
 case "$distribution" in
   arch) packages_file=archlinux.txt
-    is_archlinux=1
+    install_cmd="sudo pacman -Syu --needed --noconfirm"
     ;;
-  *) echo "Distribution $distribution is currently not supported"
+  nobara)
+    ;&
+  fedora)
+    packages_file="fedora.txt"
+    install_cmd="sudo dnf install -y"
+    ;;
+  *) echo "Distribution '$distribution' is currently not supported"
     ;;
 esac
-# Install packages required to build the viewer if the distribution is 
+packages_file_full_path="${SCRIPT_DIRECTORY}"/packages/"${packages_file}"
+# Install packages required to build the viewer if the distribution is
 # supported, otherwise try to build anyway instead of aborting.
 # This can be useful if the user has the required packages already 
 # installed on an unsupported distribution
-echo "Installing build dependencies"
-if [[ -n "$packages_file" ]]; then
-  packages_to_install=()
-  while IFS= read -r line
-  do
-    packages_to_install+=("$line")
-  done < "${SCRIPT_DIRECTORY}"/packages/$packages_file
-
-  # update system and Install missing packages
-  if [[ $is_archlinux ]]; then
-    # shellcheck disable=SC2068
-    # TODO: Avoid calling sudo if there's nothing to install
-    sudo pacman -Syu --needed ${packages_to_install[@]}
+if [[ ! -f "$packages_file_full_path" ]]; then
+  >&2 printf "Warning: There is no configured package list for your distribution.\n Installing development packages will be your responsability."
+else
+  echo "Installing build dependencies"
+    packages_to_install=()
+    while IFS= read -r line
+    do
+      packages_to_install+=("$line")
+    done < "${packages_file_full_path}"
+    $install_cmd ${packages_to_install[@]}
   fi
-fi
-
-# Set up the build environment
-virtualenv3 ".venv"
-source .venv/bin/activate
-pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
-source .venv/bin/activate
+  # Set up the build environment
+  virtualenv --python=/usr/bin/python3 ".venv"
+  source .venv/bin/activate
+  pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
+  source .venv/bin/activate
 
 # left here for future cross-compiling need
 if [[ -z "$CARCH" ]]; then
@@ -141,10 +143,10 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
       fi
       build_jobs=${jobs}
     fi
-  fi
-  echo "Adjusted job count: ${build_jobs}"
-fi
-export AUTOBUILD_CPU_COUNT=$build_jobs
+    fi
+    echo "Adjusted job count: ${build_jobs}"
+    fi
+    export AUTOBUILD_CPU_COUNT=$build_jobs
 
 # And now we configure and build the viewer with our adjusted configuration
 autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
