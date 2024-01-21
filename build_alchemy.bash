@@ -51,18 +51,18 @@ if [[ ! -f "$packages_file_full_path" ]]; then
   >&2 printf "Warning: There is no configured package list for your distribution.\n Installing development packages will be your responsability."
 else
   echo "Installing build dependencies"
-    packages_to_install=()
-    while IFS= read -r line
-    do
-      packages_to_install+=("$line")
-    done < "${packages_file_full_path}"
-    $install_cmd ${packages_to_install[@]}
-  fi
-  # Set up the build environment
-  virtualenv --python=/usr/bin/python3 ".venv"
-  source .venv/bin/activate
-  pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
-  source .venv/bin/activate
+  packages_to_install=()
+  while IFS= read -r line
+  do
+    packages_to_install+=("$line")
+  done < "${packages_file_full_path}"
+  $install_cmd ${packages_to_install[@]}
+fi
+# Set up the build environment
+virtualenv --python=/usr/bin/python3 ".venv"
+source .venv/bin/activate
+pip install --upgrade --quiet cmake llbase llsd certifi autobuild ninja
+source .venv/bin/activate
 
 # left here for future cross-compiling need
 if [[ -z "$CARCH" ]]; then
@@ -91,31 +91,28 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
   echo "clang was found and will be used instead of gcc"
 fi
 
+# The viewer requires an average of 2GB of memory per core to link
+# Note: Behaviour change compared to the previous versions:
+# This script will no longer try to allocate build memory into swap
+# This is bad practice, and swap should be reserved to evict process
+# memory from physical ram to make place for the current workset.
+# This script will now try to check if swap is present and sufficent
+# for the current used memory to be stored in swap before allocating,
+# and will fallback to conservative allocation if swap is not available
 if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
   if [[ ${build_jobs} -gt 1 ]]; then
-    # The viewer requires an average of 2GB of memory per core to link
-    # Note: Behaviour change compared to the previous versions:
-    # This script will no longer try to allocate build memory into swap
-    # This is bad practice, and swap should be reserved to evict process
-    # memory from physical ram to make place for the current workset.
-    # This script will now try to check if swap is present and sufficent
-    # for the current used memory to be stored in swap before allocating,
-    # and will fallback to conservative allocation if swap is not available
     mempercorekb=$((1048576))
     requiredmemorykb=$(($(nproc) * mempercorekb))
     free_output="$(free --kilo --total | tail -n+2 | tr -s ' ')"
     physical_output=$(grep "Mem:" <<<"$free_output")
     totalmemorykbphysical=$(cut -d ' ' -f 2 <<<"$physical_output")
     usedmemorykbphysical=$(cut -d ' ' -f 3 <<<"$physical_output")
-    # Don't factor in the caches, these will be flushed as needed
-    #freememorykbphysical=$(cut -d ' ' -f 4 <<<"$physical_output")
     availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
     total_output=$(grep "Total:" <<<"$free_output")
     totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
     usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
     freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
     swap_output=$(grep Swap: <<<"$free_output")
-    # Determine available swap space
     availableswapkb=0
     if [[ -n "$swap_output" ]]; then
       availableswapkb=$(cut -d ' ' -f 4 <<<"$swap_output")
@@ -143,10 +140,10 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
       fi
       build_jobs=${jobs}
     fi
-    fi
-    echo "Adjusted job count: ${build_jobs}"
-    fi
-    export AUTOBUILD_CPU_COUNT=$build_jobs
+  fi
+  echo "Adjusted job count: ${build_jobs}"
+fi
+export AUTOBUILD_CPU_COUNT=$build_jobs
 
 # And now we configure and build the viewer with our adjusted configuration
 autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
