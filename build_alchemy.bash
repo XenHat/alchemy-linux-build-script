@@ -37,7 +37,7 @@ case "$distribution" in
     ;&
   fedora)
     packages_file="fedora.txt"
-    install_cmd="sudo dnf install -y"
+    install_cmd="dnf install -y"
     ;;
   *) echo "Distribution '$distribution' is currently not supported"
     ;;
