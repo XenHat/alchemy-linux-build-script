@@ -27,37 +27,79 @@ FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
 SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
 # SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
 
-distribution=$(awk -F'=' '/^ID=/ {print tolower($2)}' /etc/*-release 2> /dev/null)
-packages_file=''
-case "$distribution" in
-  arch) packages_file=archlinux.txt
-    install_cmd="sudo pacman -Syu --needed --noconfirm"
-    ;;
-  nobara)
-    ;&
-  fedora)
-    packages_file="fedora.txt"
-    install_cmd="dnf install -y"
-    ;;
-  *) echo "Distribution '$distribution' is currently not supported"
-    ;;
-esac
-packages_file_full_path="${SCRIPT_DIRECTORY}"/packages/"${packages_file}"
-# Install packages required to build the viewer if the distribution is
-# supported, otherwise try to build anyway instead of aborting.
-# This can be useful if the user has the required packages already 
-# installed on an unsupported distribution
-if [[ ! -f "$packages_file_full_path" ]]; then
-  >&2 printf "Warning: There is no configured package list for your distribution.\n Installing development packages will be your responsability."
+# Function to install packages based on the package manager
+install_packages() {
+    case $1 in
+        "apt")
+            sudo apt update
+            sudo apt install -y "${packages[@]}"
+            ;;
+        "pacman")
+            sudo pacman -Syu --noconfirm "${packages[@]}"
+            ;;
+        "dnf")
+            sudo dnf install -y "${packages[@]}"
+            ;;
+        "emerge")
+            sudo emerge "${packages[@]}"
+            ;;
+        *)
+            echo "Unsupported package manager"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to read package names from the distribution-specific txt file
+read_packages() {
+    local file_path="$SCRIPT_DIRECTORY/needed_packages/$1.txt"
+    if [ -f "$file_path" ]; then
+        mapfile -t packages < "$file_path"
+    else
+        echo "Package file not found for $1"
+        echo "Please submit a pull request once you got a package list that works for $1"
+        exit 1
+    fi
+}
+
+# Identify the distribution
+if [ -f "/etc/os-release" ]; then
+    source /etc/os-release
+    packages_list="$ID"
+    case $ID in
+        "arch" | "manjaro")
+            manager="pacman"
+            ;;
+        "debian" | "ubuntu")
+            manager="apt"
+            ;;
+        "nobara")
+            packages_list="fedora"
+            ;&
+        "fedora")
+            manager="dnf"
+            ;;
+        "gentoo" | "funtoo")
+            manager="emerge"
+            ;;
+        "pop")
+            manager="apt"
+            ;;
+        *)
+            echo "Unsupported distribution"
+            exit 1
+            ;;
+    esac
+
+    read_packages "$packages_list"
+    install_packages "$manager"
 else
-  echo "Installing build dependencies"
-  packages_to_install=()
-  while IFS= read -r line
-  do
-    packages_to_install+=("$line")
-  done < "${packages_file_full_path}"
-  $install_cmd ${packages_to_install[@]}
+    echo "Unable to determine the Linux distribution"
+    exit 1
 fi
+
+echo "Packages installed successfully"
+
 # Set up the build environment
 virtualenv --python=/usr/bin/python3 ".venv"
 source .venv/bin/activate
@@ -75,7 +117,7 @@ _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
 AL_CMAKE_CONFIG=(
-  -DLL_TESTS:BOOL=${ENABLE_TESTS:-ON}
+  -DLL_TESTS:BOOL="${ENABLE_TESTS:-ON}"
   -DDISABLE_FATAL_WARNINGS=ON
   -DUSE_LTO:BOOL=OFF
   -DVIEWER_CHANNEL="Alchemy Test"
