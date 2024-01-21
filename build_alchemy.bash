@@ -152,8 +152,8 @@ if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
     availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
     total_output=$(grep "Total:" <<<"$free_output")
     totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
-    usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
-    freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
+    # usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
+    # freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
     swap_output=$(grep Swap: <<<"$free_output")
     availableswapkb=0
     if [[ -n "$swap_output" ]]; then
