@@ -38,7 +38,7 @@ install_packages() {
             sudo pacman -Syu --noconfirm "${packages[@]}"
             ;;
         "dnf")
-            dnf install --refresh -y "${packages[@]}"
+            sudo dnf install --refresh -y "${packages[@]}"
             ;;
         "emerge")
             sudo emerge "${packages[@]}"
