@@ -132,6 +132,10 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
 	echo "clang was found and will be used instead of gcc"
 fi
+# until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
+if [[ -z "$NO_MOLD" ]]; && command -v mold > /dev/null 2>&1; then
+	AL_CMAKE_CONFIG+=("-DCMAKE_LINKER=/usr/bin/mold")
+fi
 
 # The viewer requires an average of 2GB of memory per core to link
 # Note: Behaviour change compared to the previous versions:
