@@ -35,7 +35,7 @@ install_packages() {
 		sudo apt install -y "${packages[@]}"
 		;;
 	"pacman")
-		sudo pacman -Syu --noconfirm "${packages[@]}"
+		sudo pacman -Syu --noconfirm --needed "${packages[@]}"
 		;;
 	"dnf")
 		sudo dnf install --refresh -y "${packages[@]}"
