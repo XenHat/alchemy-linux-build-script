@@ -133,7 +133,7 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 	echo "clang was found and will be used instead of gcc"
 fi
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
-if [[ -z "$NO_MOLD" ]]; && command -v mold > /dev/null 2>&1; then
+if [[ -z "$NO_MOLD" ]] && command -v mold >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_LINKER=/usr/bin/mold")
 fi
 
