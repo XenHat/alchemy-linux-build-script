@@ -135,7 +135,7 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 fi
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
 if [[ -z "$NO_MOLD" ]] && command -v mold >/dev/null 2>&1; then
-	AL_CMAKE_CONFIG+=("-DCMAKE_LINKER=/usr/bin/mold")
+	AL_CMAKE_CONFIG+=("-DUSE_MOLD:BOOL=ON")
 fi
 
 # The viewer requires an average of 2GB of memory per core to link
