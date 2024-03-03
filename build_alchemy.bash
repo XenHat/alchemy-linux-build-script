@@ -62,44 +62,45 @@ read_packages() {
 	fi
 }
 
-# Identify the distribution
-if [ -f "/etc/os-release" ]; then
-	source /etc/os-release
-	packages_list="$ID"
-	case $ID in
-	"arch" | "manjaro")
-		manager="pacman"
-		;;
-	"debian" | "ubuntu")
-		manager="apt"
-		;;
-	"nobara")
-		packages_list="fedora"
-		;&
-	"fedora")
-		manager="dnf"
-		;;
-	"gentoo" | "funtoo")
-		manager="emerge"
-		;;
-	"pop")
-		manager="apt"
-		;;
-	*)
-		echo "Unsupported distribution"
+if [[ "$1" != "--no-deps" ]]; then
+	# Identify the distribution
+	if [ -f "/etc/os-release" ]; then
+		source /etc/os-release
+		packages_list="$ID"
+		case $ID in
+		"arch" | "manjaro")
+			manager="pacman"
+			;;
+		"debian" | "ubuntu")
+			manager="apt"
+			;;
+		"nobara")
+			packages_list="fedora"
+			;&
+		"fedora")
+			manager="dnf"
+			;;
+		"gentoo" | "funtoo")
+			manager="emerge"
+			;;
+		"pop")
+			manager="apt"
+			;;
+		*)
+			echo "Unsupported distribution"
+			exit 1
+			;;
+		esac
+
+		read_packages "$packages_list"
+		install_packages "$manager"
+	else
+		echo "Unable to determine the Linux distribution"
 		exit 1
-		;;
-	esac
+	fi
 
-	read_packages "$packages_list"
-	install_packages "$manager"
-else
-	echo "Unable to determine the Linux distribution"
-	exit 1
+	echo "Packages installed successfully"
 fi
-
-echo "Packages installed successfully"
-
 # Set up the build environment
 virtualenv --python=/usr/bin/python3 ".venv"
 source .venv/bin/activate
