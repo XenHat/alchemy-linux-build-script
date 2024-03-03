@@ -124,6 +124,20 @@ AL_CMAKE_CONFIG=(
 	-DVIEWER_CHANNEL="Alchemy Test"
 )
 
+if [[ -n "$NO_ICECC" ]]; then
+	ICECC=no
+	export ICECC
+elif [[ -n "$USE_ICECC" ]]; then
+	PATH="/usr/lib/icecream/bin/:/lib/icecream/libexec/bin/:$PATH"
+	export PATH
+	AL_CMAKE_CONFIG+=("-DUSE_PRECOMPILED_HEADERS=FALSE")
+	# AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=/lib/icecream/libexec/icecc/bin/g++")
+	# AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=/lib/icecream/libexec/icecc/bin/gcc")
+	NO_SMART_JOB_COUNT=1
+	NO_CCACHE=1
+	build_jobs=$(($(nproc) * 4))
+fi
+
 if [[ -z "$NO_CCACHE" ]] && command -v ccache >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
 	echo "ccache was found and will be used"
