@@ -143,8 +143,9 @@ fi
 compiler_wrapper=""
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
 if [[ -z "$NO_MOLD" ]] && command -v mold >/dev/null 2>&1; then
-	AL_CMAKE_CONFIG+=("-DUSE_MOLD:BOOL=ON")
-	compiler_wrapper="mold -run"
+	# TODO: -Qunused-arguments may be specific to clang9+. Need to test GCC
+	AL_CMAKE_CONFIG+=(-DCMAKE_CXX_FLAGS="-fuse-ld=mold -Qunused-arguments")
+	# compiler_wrapper="mold -run"
 fi
 
 # The viewer requires an average of 2GB of memory per core to link
