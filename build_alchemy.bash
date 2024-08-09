@@ -140,9 +140,11 @@ if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
 	echo "clang was found and will be used instead of gcc"
 fi
+compiler_wrapper=""
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
 if [[ -z "$NO_MOLD" ]] && command -v mold >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DUSE_MOLD:BOOL=ON")
+	compiler_wrapper="mold -run"
 fi
 
 # The viewer requires an average of 2GB of memory per core to link
@@ -210,6 +212,6 @@ if [[ -f "$SCRIPT_DIRECTORY/local-commands.sh" ]]; then
 fi
 
 # And now we configure and build the viewer with our adjusted configuration
-$wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+$wrapper $compiler_wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
-$wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+$wrapper $compiler_wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
