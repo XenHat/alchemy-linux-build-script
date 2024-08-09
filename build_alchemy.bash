@@ -27,6 +27,8 @@ FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
 SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
 # SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
 
+export AUTOBUILD_INSTALLABLE_CACHE=~/.cache/autobuild/alchemy/
+
 # Function to install packages based on the package manager
 install_packages() {
 	case $1 in
@@ -101,6 +103,9 @@ if [[ "$1" != "--no-deps" ]]; then
 
 	echo "Packages installed successfully"
 fi
+
+mkdir "${AUTOBUILD_INSTALLABLE_CACHE}" -p
+
 # Set up the build environment
 virtualenv --python=/usr/bin/python3 ".venv"
 source .venv/bin/activate
@@ -118,30 +123,18 @@ _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
 AL_CMAKE_CONFIG=(
-	-DLL_TESTS:BOOL="${ENABLE_TESTS:-ON}"
 	-DDISABLE_FATAL_WARNINGS=ON
-	-DUSE_LTO:BOOL=OFF
-	-DVIEWER_CHANNEL="Alchemy Test"
 )
 
-if [[ -n "$NO_ICECC" ]]; then
-	ICECC=no
-	export ICECC
-elif [[ -n "$USE_ICECC" ]]; then
-	PATH="/usr/lib/icecream/bin/:/lib/icecream/libexec/bin/:$PATH"
-	export PATH
-	AL_CMAKE_CONFIG+=("-DUSE_PRECOMPILED_HEADERS=FALSE")
-	# AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=/lib/icecream/libexec/icecc/bin/g++")
-	# AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=/lib/icecream/libexec/icecc/bin/gcc")
-	NO_SMART_JOB_COUNT=1
-	NO_CCACHE=1
-	build_jobs=$(($(nproc) * 4))
-fi
-
-if [[ -z "$NO_CCACHE" ]] && command -v ccache >/dev/null 2>&1; then
-	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache)")
+if [[ -z "$NO_SCCACHE" ]] && command -v sccache >/dev/null 2>&1; then
+	AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER_LAUNCHER=sccache")
+	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=sccache")
+elif [[ -z "$NO_CCACHE" ]] && command -v ccache >/dev/null 2>&1; then
+	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER_LAUNCHER=ccache")
+	AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER_LAUNCHER=ccache")
 	echo "ccache was found and will be used"
 fi
+
 if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
 	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
@@ -160,53 +153,63 @@ fi
 # This script will now try to check if swap is present and sufficent
 # for the current used memory to be stored in swap before allocating,
 # and will fallback to conservative allocation if swap is not available
-if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
-	if [[ ${build_jobs} -gt 1 ]]; then
-		mempercorekb=$((1048576))
-		requiredmemorykb=$(($(nproc) * mempercorekb))
-		free_output="$(free --kilo --total | tail -n+2 | tr -s ' ')"
-		physical_output=$(grep "Mem:" <<<"$free_output")
-		totalmemorykbphysical=$(cut -d ' ' -f 2 <<<"$physical_output")
-		usedmemorykbphysical=$(cut -d ' ' -f 3 <<<"$physical_output")
-		availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
-		total_output=$(grep "Total:" <<<"$free_output")
-		totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
-		# usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
-		# freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
-		swap_output=$(grep Swap: <<<"$free_output")
-		availableswapkb=0
-		if [[ -n "$swap_output" ]]; then
-			availableswapkb=$(cut -d ' ' -f 4 <<<"$swap_output")
-		fi
-		echo "Required memory at $(nproc) jobs:         $((requiredmemorykb / 1024 / 1024))GB"
-		echo "Available memory (counting swap):   $((totalmemorykbcombined / 1024 / 1024))GB"
-		echo "Total RAM:                          $((totalmemorykbphysical / 1024 / 1024))GB"
-		if [[ ${requiredmemorykb} -gt ${totalmemorykbphysical} ]]; then
-			echo "Not enough physical memory to use all cores"
-			if [[ ${usedmemorykbphysical} -lt ${availableswapkb} ]]; then
-				# There is enough swap to fit all the used memory. Use all physical ram as swap will do its job
-				echo "Using swap memory to store current processes memory"
-				# We do not want to compile in swap, so adjust accordingly
-				jobs=$(((totalmemorykbphysical) / mempercorekb))
-			else
-				# TODO: Verify this logic on low-ram systems
-				# Not enough swap to hold ram contents, calculate manually
-				jobs=1
-				echo "${jobs} job  would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
-				while [[ $((jobs * mempercorekb)) -le ${availablememorykbphysical} ]]; do
-					((jobs++))
-					echo "${jobs} jobs would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
-				done
-				# Back off one job count. Not sure why I have to do this but
+if [[ -z $AUTOBUILD_CPU_COUNT ]]; then
+	if [[ -z "$NO_SMART_JOB_COUNT" ]]; then
+		if [[ ${build_jobs} -gt 1 ]]; then
+			mempercorekb=$((1048576))
+			requiredmemorykb=$(($(nproc) * mempercorekb))
+			free_output="$(free --kilo --total | tail -n+2 | tr -s ' ')"
+			physical_output=$(grep "Mem:" <<<"$free_output")
+			totalmemorykbphysical=$(cut -d ' ' -f 2 <<<"$physical_output")
+			usedmemorykbphysical=$(cut -d ' ' -f 3 <<<"$physical_output")
+			availablememorykbphysical=$(cut -d ' ' -f 7 <<<"$free_output")
+			total_output=$(grep "Total:" <<<"$free_output")
+			totalmemorykbcombined=$(cut -d ' ' -f 2 <<<"$total_output")
+			# usedmemorytotal=$(cut -d ' ' -f 2 <<<"$total_output")
+			# freememorytotal=$(cut -d ' ' -f 4 <<<"$total_output")
+			swap_output=$(grep Swap: <<<"$free_output")
+			availableswapkb=0
+			if [[ -n "$swap_output" ]]; then
+				availableswapkb=$(cut -d ' ' -f 4 <<<"$swap_output")
 			fi
-			build_jobs=${jobs}
+			echo "Required memory at $(nproc) jobs:         $((requiredmemorykb / 1024 / 1024))GB"
+			echo "Available memory (counting swap):   $((totalmemorykbcombined / 1024 / 1024))GB"
+			echo "Total RAM:                          $((totalmemorykbphysical / 1024 / 1024))GB"
+			if [[ ${requiredmemorykb} -gt ${totalmemorykbphysical} ]]; then
+				echo "Not enough physical memory to use all cores"
+				if [[ ${usedmemorykbphysical} -lt ${availableswapkb} ]]; then
+					# There is enough swap to fit all the used memory. Use all physical ram as swap will do its job
+					echo "Using swap memory to store current processes memory"
+					# We do not want to compile in swap, so adjust accordingly
+					jobs=$(((totalmemorykbphysical) / mempercorekb))
+				else
+					# TODO: Verify this logic on low-ram systems
+					# Not enough swap to hold ram contents, calculate manually
+					jobs=1
+					echo "${jobs} job  would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
+					while [[ $((jobs * mempercorekb)) -le ${availablememorykbphysical} ]]; do
+						((jobs++))
+						echo "${jobs} jobs would consume $(((jobs * mempercorekb) / 1024 / 1024))GB"
+					done
+					# Back off one job count. Not sure why I have to do this but
+				fi
+				build_jobs=${jobs}
+			fi
 		fi
+		echo "Adjusted job count: ${build_jobs}"
 	fi
-	echo "Adjusted job count: ${build_jobs}"
+	export AUTOBUILD_CPU_COUNT=$build_jobs
 fi
-export AUTOBUILD_CPU_COUNT=$build_jobs
+wrapper=""
+if command -v op; then
+	wrapper="op run -- "
+fi
+
+if [[ -f "$SCRIPT_DIRECTORY/local-commands.sh" ]]; then
+	source "$SCRIPT_DIRECTORY/local-commands.sh"
+fi
 
 # And now we configure and build the viewer with our adjusted configuration
-autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+$wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
-autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+$wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
