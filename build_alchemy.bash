@@ -117,8 +117,6 @@ if [[ -z "$CARCH" ]]; then
 	CARCH=$(uname -m)
 fi
 
-echo ""
-echo "Configuring the build"
 _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
 
@@ -138,7 +136,6 @@ fi
 if [[ -z "$NO_CLANG" ]] && command -v clang++ >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER=$(which clang)")
 	AL_CMAKE_CONFIG+=("-DCMAKE_CXX_COMPILER=$(which clang++)")
-	echo "clang was found and will be used instead of gcc"
 fi
 compiler_wrapper=""
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
