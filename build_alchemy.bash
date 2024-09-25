@@ -210,6 +210,6 @@ if [[ -f "$SCRIPT_DIRECTORY/local-commands.sh" ]]; then
 fi
 
 # And now we configure and build the viewer with our adjusted configuration
-$wrapper $compiler_wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+nice -n18 ionice -c3 $wrapper $compiler_wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
-$wrapper $compiler_wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+nice -n18 ionice -c3 $wrapper $compiler_wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
