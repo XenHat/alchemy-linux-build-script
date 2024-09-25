@@ -141,7 +141,7 @@ compiler_wrapper=""
 # until cmake 3.29 CMAKE_LINK_TARGET=MOLD works properly
 if [[ -z "$NO_MOLD" ]] && command -v mold >/dev/null 2>&1; then
 	# TODO: -Qunused-arguments may be specific to clang9+. Need to test GCC
-	AL_CMAKE_CONFIG+=(-DCMAKE_CXX_FLAGS="-fuse-ld=mold -Qunused-arguments")
+	AL_CMAKE_CONFIG+=(-DCMAKE_CXX_FLAGS="-fuse-ld=mold -Qunused-arguments" -DCMAKE_CXX_LINKER_WRAPPER_FLAG="--separate-debug-file")
 	# compiler_wrapper="mold -run"
 fi
 
