@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 # Alchemy Viewer linux build script
 #
 # Copyright 2023 XenHat <me@xenh.at>
