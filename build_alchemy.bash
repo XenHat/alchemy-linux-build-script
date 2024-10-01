@@ -28,6 +28,9 @@ SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
 # SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
 
 export AUTOBUILD_INSTALLABLE_CACHE=~/.cache/autobuild/alchemy/
+AL_CMAKE_CONFIG=(
+	-DDISABLE_FATAL_WARNINGS=ON
+)
 
 # Function to install packages based on the package manager
 install_packages() {
@@ -43,7 +46,8 @@ install_packages() {
 		sudo dnf install --refresh -y "${packages[@]}"
 		;;
 	"emerge")
-		sudo emerge "${packages[@]}"
+		sudo emerge --changed-use --newuse "${packages[@]}"
+		echo -e "==== NOTE: If you have issues emerging VLC, try:\neuse -D vaapi -p media-video/vlc"
 		;;
 	*)
 		echo "Unsupported package manager"
@@ -119,10 +123,6 @@ fi
 
 _logfile="build.${CARCH}.$(date +%s).log"
 build_jobs=$(nproc)
-
-AL_CMAKE_CONFIG=(
-	-DDISABLE_FATAL_WARNINGS=ON
-)
 
 if [[ -z "$NO_SCCACHE" ]] && command -v sccache >/dev/null 2>&1; then
 	AL_CMAKE_CONFIG+=("-DCMAKE_C_COMPILER_LAUNCHER=sccache")
@@ -209,7 +209,12 @@ if [[ -f "$SCRIPT_DIRECTORY/local-commands.sh" ]]; then
 	source "$SCRIPT_DIRECTORY/local-commands.sh"
 fi
 
+# export commands for clang LSP
+AL_CMAKE_CONFIG+=('-DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
+
 # And now we configure and build the viewer with our adjusted configuration
 nice -n18 ionice -c3 $wrapper $compiler_wrapper autobuild configure -A 64 -c ReleaseOS -- "${AL_CMAKE_CONFIG[@]}" > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+if [[ ! "$@" =~ "--no-build" ]]; then
 echo "Building with ${AUTOBUILD_CPU_COUNT} jobs"
 nice -n18 ionice -c3 $wrapper $compiler_wrapper autobuild build -A 64 -c ReleaseOS --no-configure > >(tee -a "$_logfile") 2> >(tee -a "$_logfile" >&2)
+fi
