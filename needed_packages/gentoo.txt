@@ -2,7 +2,7 @@ x11-libs/gtk+:3
 x11-libs/gtk+-2.0
 media-libs/libglvnd
 media-libs/glu
-dev-libs/libiconv
+virtual/libiconv
 net-dns/libidn
 media-libs/libjpeg-turbo
 media-libs/libpng
@@ -16,3 +16,4 @@ media-video/vlc
 app-arch/xz-utils
 sys-libs/zlib
 dev-python/virtualenv
+sys-apps/xdg-desktop-portal
