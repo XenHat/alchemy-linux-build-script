@@ -23,9 +23,18 @@
 
 set -e
 
-FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
-SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
-# SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
+if [ "$(readlink -f $(which bash))" =~ "zsh" ]; then
+  SOURCE="${(%):-%N}"
+else
+  SOURCE=${BASH_SOURCE[0]}
+fi
+
+while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+	DIR=$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)
+	SOURCE=$(readlink "$SOURCE")
+	[[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR=$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)
 
 export AUTOBUILD_INSTALLABLE_CACHE=~/.cache/autobuild/alchemy/
 AL_CMAKE_CONFIG=(
@@ -58,7 +67,7 @@ install_packages() {
 
 # Function to read package names from the distribution-specific txt file
 read_packages() {
-	local file_path="$SCRIPT_DIRECTORY/needed_packages/$1.txt"
+	local file_path="$DIR/needed_packages/$1.txt"
 	if [ -f "$file_path" ]; then
 		mapfile -t packages <"$file_path"
 	else
@@ -205,8 +214,8 @@ if command -v op; then
 	wrapper="op run -- "
 fi
 
-if [[ -f "$SCRIPT_DIRECTORY/local-commands.sh" ]]; then
-	source "$SCRIPT_DIRECTORY/local-commands.sh"
+if [[ -f "$DIR/local-commands.sh" ]]; then
+	source "$DIR/local-commands.sh"
 fi
 
 # export commands for clang LSP
