@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Alchemy Viewer linux build script
 #
 # Copyright 2023 XenHat <me@xenh.at>
@@ -23,7 +23,7 @@
 
 set -e
 
-if [ "$(readlink -f $(which bash))" =~ "zsh" ]; then
+if [[ "$(readlink -f $(which bash))" =~ "zsh" ]]; then
   SOURCE="${(%):-%N}"
 else
   SOURCE=${BASH_SOURCE[0]}
