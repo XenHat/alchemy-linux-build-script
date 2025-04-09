@@ -46,16 +46,16 @@ install_packages() {
 	case $1 in
 	"apt")
 		sudo apt update
-		sudo apt install -y "${packages[@]}"
+		sudo apt install "${packages[@]}"
 		;;
 	"pacman")
-		sudo pacman -Syu --noconfirm --needed "${packages[@]}"
+		sudo pacman -Syu --needed "${packages[@]}"
 		;;
 	"dnf")
-		sudo dnf install --refresh -y "${packages[@]}"
+		sudo dnf install --refresh "${packages[@]}"
 		;;
 	"emerge")
-		sudo emerge --changed-use --newuse "${packages[@]}"
+		sudo emerge --changed-use --newuse --ask=y "${packages[@]}"
 		echo -e "==== NOTE: If you have issues emerging VLC, try:\neuse -D vaapi -p media-video/vlc"
 		;;
 	*)
@@ -81,25 +81,25 @@ if [[ "$1" != "--no-deps" ]]; then
 	# Identify the distribution
 	if [ -f "/etc/os-release" ]; then
 		source /etc/os-release
-		packages_list="$ID"
-		case $ID in
-		"arch" | "manjaro")
+    # TODO: Handle distributions who have no ID_LIKE, such as Zorin and SerpentOS/AerynOS
+		case $ID_LIKE in
+		arch)
+      packages_list="arch"
 			manager="pacman"
 			;;
-		"debian" | "ubuntu")
+		*ubuntu*)
+      ;&
+    *debian*)
+      packages_list="debian"
 			manager="apt"
 			;;
-		"nobara")
+		*fedora*)
 			packages_list="fedora"
-			;&
-		"fedora")
 			manager="dnf"
 			;;
-		"gentoo" | "funtoo")
+		*gentoo*)
+      packages_list=gentoo
 			manager="emerge"
-			;;
-		"pop")
-			manager="apt"
 			;;
 		*)
 			echo "Unsupported distribution"
