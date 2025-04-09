@@ -16,4 +16,4 @@ python-virtualenv
 sdl2
 vlc
 xz
-zlib
+zlib-ng-compat
