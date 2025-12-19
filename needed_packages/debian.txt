@@ -1,0 +1,15 @@
+build-essential
+cmake
+git
+libfontconfig-dev
+libglib2.0-dev
+libglvnd-dev
+libgstreamer1.0-dev
+libgstreamer-plugins-base1.0-dev
+libosmesa6-dev
+libvlc-dev
+libwayland-dev
+libx11-dev
+ninja-build
+python3
+python3-venv
