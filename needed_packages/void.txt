@@ -1,0 +1,7 @@
+MesaLib-devel
+cmake
+fontconfig-devel
+glu-devel
+libXinerama-devel
+libXrandr-devel
+ninja
