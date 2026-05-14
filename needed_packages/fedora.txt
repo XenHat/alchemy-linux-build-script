@@ -1,16 +1,15 @@
-SDL2-devel
 cmake
 dbus-devel
 fontconfig-devel
 freetype-devel
 gcc-c++
-libXinerama-devel
-libXrandr-devel
 libglvnd-devel
 libidn-devel
 libjpeg-turbo-devel
 libpng-devel
+libXinerama-devel
 libxml2-devel
+libXrandr-devel
 mesa-libGL-devel
 mesa-libGLU-devel
 ninja
@@ -18,6 +17,7 @@ nss-devel
 openal-soft-devel
 procps-ng
 python3-virtualenv
+SDL2-devel
 vlc-devel
 xz
 zlib

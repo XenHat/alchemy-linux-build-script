@@ -6,8 +6,8 @@ libiconv
 libidn
 libjpeg-turbo
 libpng
-libxss
 libxml2
+libxss
 mesa
 nss
 openal
