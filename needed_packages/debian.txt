@@ -2,6 +2,7 @@ build-essential
 cmake
 git
 libfontconfig-dev
+libgl1-mesa-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libglvnd-dev
